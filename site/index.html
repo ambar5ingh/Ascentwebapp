@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ASCENT India</title>
+<meta name="description" content="WRI India ASCENT tool (Beta V25) as a web app: the full workbook with live calculations, inputs, dropdowns, navigation buttons and interactive charts.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23203864'/%3E%3Cpath d='M8 23 L16 8 L24 23' stroke='white' stroke-width='3' fill='none'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Carlito:ital,wght@0,400;0,700;1,400&family=Arimo:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+<script src="vendor/ssf.js"></script>
+<script src="vendor/plotly.min.js" defer></script>
+</head>
+<body>
+<div id="login" class="login" style="display:none">
+  <form class="login-card" autocomplete="off">
+    <div class="login-logo">ASCENT</div>
+    <h1>WRI India · ASCENT</h1>
+    <p>Enter the password to open the tool.</p>
+    <label for="pw">Password</label>
+    <input id="pw" type="password" autocomplete="current-password" required>
+    <div class="login-error" role="alert"></div>
+    <button type="submit">Open</button>
+  </form>
+</div>
+
+<div id="loading" class="loading" style="display:none">
+  <div class="loading-card">
+    <div class="login-logo">ASCENT</div>
+    <div class="load-track"><div id="load-bar"></div></div>
+    <div id="load-text">Loading…</div>
+  </div>
+</div>
+
+<header class="toolbar">
+  <button id="btn-home" class="tb" title="Home (ASCENT India)" aria-label="Home">&#8962;</button>
+  <button id="btn-back" class="tb" title="Back to previous sheet" aria-label="Back">&#8592;</button>
+  <span class="sep"></span>
+  <button id="btn-undo" class="tb" title="Undo (Ctrl+Z)" aria-label="Undo">&#8630;</button>
+  <button id="btn-redo" class="tb" title="Redo (Ctrl+Y)" aria-label="Redo">&#8631;</button>
+  <span class="sep"></span>
+  <select id="sheet-select" title="Go to sheet" aria-label="Go to sheet"></select>
+  <span id="sheet-title" class="sheet-title"></span>
+  <span class="grow"></span>
+  <div class="zoom" role="group" aria-label="Zoom">
+    <button id="zoom-out" class="tb" title="Zoom out" aria-label="Zoom out">&minus;</button>
+    <button id="zoom-val" class="zoom-val" title="Reset to 100%">55%</button>
+    <button id="zoom-in" class="tb" title="Zoom in" aria-label="Zoom in">+</button>
+  </div>
+  <div class="menu">
+    <button class="tb wide">View &#9662;</button>
+    <div class="menu-panel">
+      <label><input type="checkbox" id="opt-formulaBar"> Formula bar</label>
+      <label><input type="checkbox" id="opt-tabs"> Sheet tabs</label>
+      <label><input type="checkbox" id="opt-headings"> Row &amp; column headings</label>
+      <label><input type="checkbox" id="opt-gridlines"> Gridlines (this sheet)</label>
+    </div>
+  </div>
+  <div class="menu">
+    <button class="tb wide">File &#9662;</button>
+    <div class="menu-panel">
+      <button id="menu-export">Export my inputs (.json)</button>
+      <button id="menu-import">Import inputs…</button>
+      <button id="menu-csv">Download this sheet (.csv)</button>
+      <button id="menu-protect">Protect / unprotect sheet…</button>
+      <hr>
+      <button id="menu-reset">Reset workbook</button>
+      <button id="menu-logout">Lock</button>
+    </div>
+  </div>
+  <input type="file" id="import-file" accept=".json,application/json" hidden>
+</header>
+
+<div class="fxbar">
+  <input id="name-box" class="name-box" aria-label="Cell address" spellcheck="false">
+  <span class="fx">fx</span>
+  <input id="fx-input" class="fx-input" aria-label="Cell contents" spellcheck="false">
+</div>
+
+<main id="grid" class="grid-root"></main>
+
+<nav id="tabs" class="tabs" aria-label="Sheets"></nav>
+<footer class="statusbar">
+  <span>Ready</span>
+  <span id="status-calc"></span>
+  <span class="grow"></span>
+  <span id="status-cell"></span>
+</footer>
+<div id="toast" class="toast" role="status"></div>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

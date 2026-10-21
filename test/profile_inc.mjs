@@ -1,0 +1,20 @@
+import fs from 'fs';
+import { buildEngine, loadGraph } from '../site/js/engine/load.js';
+const dir = 'site/data';
+const wb = JSON.parse(fs.readFileSync(dir + '/workbook.json'));
+const datas = wb.sheets.map((s) => JSON.parse(fs.readFileSync(dir + '/' + s.file)));
+const g = fs.readFileSync(dir + '/graph.bin');
+const eng = buildEngine(wb, datas);
+loadGraph(eng, g.buffer.slice(g.byteOffset, g.byteOffset + g.byteLength));
+// wrap evalCell for timing
+const orig = eng.evalCell.bind(eng);
+const per = new Map();
+let on = false;
+eng.evalCell = (fc) => { if (!on) return orig(fc); const t = process.hrtime.bigint(); const r = orig(fc); const dt = Number(process.hrtime.bigint() - t) / 1e6; const k = eng.sheets[fc.sheet].name + ' | ' + fc.text.slice(0, 90).replace(/\s+/g, ' '); const e = per.get(k) || [0, 0]; e[0] += dt; e[1]++; per.set(k, e); return r; };
+const q = eng.sheetIndex('Questionnaire');
+eng.setValues([[q, 10, 6, 'Maharashtra']]);
+on = true;
+let t = Date.now();
+eng.setValues([[q, 11, 6, 'Pune']]);
+console.log('edit ms', Date.now() - t);
+console.log([...per.entries()].sort((a, b) => b[1][0] - a[1][0]).slice(0, 25).map(([k, [ms, n]]) => ms.toFixed(1) + 'ms x' + n + ' ' + k).join('\n'));
