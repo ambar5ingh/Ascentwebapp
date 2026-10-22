@@ -96,7 +96,7 @@ export class QuestionnairePage {
     const hero = el('section', 'hero');
     const h1 = el('h1', 'hero-title');
     h1.appendChild(el('span', 'gradient-text', 'GHG Inventory'));
-    hero.append(h1, el('p', 'hero-sub', 'Fill in the questionnaire to build the base-year GHG emissions inventory. Every answer feeds the same calculations as the ASCENT workbook.'));
+    hero.append(h1, el('p', 'hero-sub', 'Fill in the questionnaire to build the base-year GHG emissions inventory.'));
     // section progress tabs
     const prog = el('div', 'progress-bar-wrap');
     const ps = el('div', 'progress-sections');

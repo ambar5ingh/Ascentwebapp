@@ -10,10 +10,11 @@ inputs are saved in the browser's local storage.
 | Page | What it does |
 |---|---|
 | **Questionnaire** | The `Questionnaire` sheet as a sectioned form (Info, Energy, Electricity, Transport, Waste, Wastewater, Industry, Agriculture). Each tab runs the workbook's own section macro, so the questions shown follow the government tier and the option buttons exactly like Excel. |
-| **Results** | Emissions profile, BAU dashboard and scenario comparison for the selected tier, as live charts and tables. |
+| **Emission Profile** | Base year Emissions, Growth Factor Selection, Business As Usual (BAU) Dashboard and Target Setting for the selected tier, with live charts and inputs. |
+| **Scenario Development** | Existing & Planned and High Ambition scenarios for 2030, 2040 and 2050, using the workbook's own scenario macros to pick the rows. |
+| **Results** | The final scenario comparison dashboard. |
 | **Metadata** | The `Metadata` table (Census, Vahan, Livestock Census, …) for the questionnaire's location. Correct a value or add new rows; with “Fill the Questionnaire from Metadata” on (the same as answering *Yes* to “use secondary data”), the questionnaire refills automatically after every change or new location. |
-| **Emission Factors** | The `Emission Factor` sheet by sector, plus the AR6 GWP values. Edit a factor and every inventory, scenario and dashboard figure recalculates; changed factors are highlighted and can be restored to the workbook values. |
-| **Workbook** | The full workbook drawn like Excel (all 59 sheets, navigation buttons, macros), for anything the pages above do not cover. |
+| **Emission Factors** | The `Emission Factor` sheet by sector, plus the AR6 GWP values. Edit a factor and every inventory, scenario and dashboard figure recalculates; “Restore factors” puts the workbook values back. |
 
 ## What is replicated
 
@@ -29,10 +30,9 @@ inputs are saved in the browser's local storage.
 | Pivot tables feeding the dashboards | Recomputed after every change (Excel only refreshes them on Refresh All) |
 | Conditional formatting, comments, hyperlinks | Supported |
 
-In the Workbook view, the View menu shows the formula bar, sheet tabs, headings and gridlines
-(hidden by default, as the workbook's `Workbook_Open` hides them) and the Sheet menu downloads a
-sheet as CSV or protects/unprotects it. The Data menu in the header exports or imports your inputs
-as JSON and resets everything.
+The Data menu in the header exports or imports your inputs as JSON and resets everything. The
+spreadsheet renderer (`grid.js`, `drawings.js`) still runs behind the pages so the workbook's macros
+behave as in Excel, but it is no longer shown.
 
 ## Password
 

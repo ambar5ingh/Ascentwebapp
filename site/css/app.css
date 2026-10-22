@@ -403,3 +403,6 @@ body.show-tabs .tabs { display: flex; }
 .ef-table { min-width: 640px; }
 .ef-table td:nth-child(n+3), .ef-table th:nth-child(n+3) { width: 15%; text-align: right; }
 .ef-table td.muted { font-size: .82rem; }
+.target-mode { margin: 0 0 14px; }
+.year-tabs { margin-top: -6px; }
+.card-title.spaced { margin-top: 22px; }

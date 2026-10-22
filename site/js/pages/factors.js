@@ -55,9 +55,9 @@ export class FactorsPage {
 
     const changed = this.changedCount();
     const tools = el('div', 'page-tools');
-    tools.appendChild(el('span', 'pill' + (changed ? ' pill-amber' : ''), changed ? `${changed} factor${changed > 1 ? 's' : ''} changed from the workbook` : 'All factors match the workbook'));
+    if (changed) tools.appendChild(el('span', 'pill pill-amber', `${changed} factor${changed > 1 ? 's' : ''} changed`));
     tools.appendChild(el('span', 'grow'));
-    const reset = el('button', 'btn btn-ghost btn-sm', 'Restore workbook factors');
+    const reset = el('button', 'btn btn-ghost btn-sm', 'Restore factors');
     reset.disabled = !changed;
     reset.addEventListener('click', () => this.restore());
     tools.appendChild(reset);

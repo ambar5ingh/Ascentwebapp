@@ -12,10 +12,12 @@ import { requireLogin, logout } from './auth.js';
 import { pivotWrites } from './pivots.js';
 import { QuestionnairePage } from './pages/questionnaire.js';
 import { ResultsPage } from './pages/results.js';
+import { ProfilePage } from './pages/profile.js';
+import { ScenarioPage } from './pages/scenario.js';
 import { MetadataPage } from './pages/metadata.js';
 import { FactorsPage } from './pages/factors.js';
 
-const PAGES = { questionnaire: QuestionnairePage, results: ResultsPage, metadata: MetadataPage, factors: FactorsPage };
+const PAGES = { questionnaire: QuestionnairePage, profile: ProfilePage, scenario: ScenarioPage, results: ResultsPage, metadata: MetadataPage, factors: FactorsPage };
 
 const STORE = 'ascent-state-v1';
 const $ = (s, el = document) => el.querySelector(s);
@@ -190,7 +192,8 @@ class App {
   // ------------------------------------------------------------------ pages
   async route() {
     let name = (location.hash.replace(/^#\/?/, '') || 'questionnaire').toLowerCase();
-    if (name !== 'workbook' && !PAGES[name]) name = 'questionnaire';
+    // the spreadsheet view is not offered any more; it stays hidden behind the pages
+    if (!PAGES[name]) name = 'questionnaire';
     if (name === this.mode) return;
     const prev = this.mode && this.pages[this.mode];
     if (prev && prev.unmount) prev.unmount();
