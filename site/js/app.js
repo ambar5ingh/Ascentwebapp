@@ -532,8 +532,14 @@ class App {
     const f = dv.f1;
     if (f.startsWith('"')) return f.slice(1, -1).split(',').map((s) => s.trim()).filter((s) => s !== '');
     let res = this.eng.evaluateRel(f, si, dv.r0, dv.c0, r, c, true);
-    const out = [];
-    const push = (v) => { if (v === null || v === undefined || v === '') return; out.push(v); };
+    // the source ranges repeat values (one state per district row), so list each item once
+    const out = [], seen = new Set();
+    const push = (v) => {
+      if (v === null || v === undefined || v === '') return;
+      const k = (v instanceof Rich ? v.toString() : String(v)).trim().toLowerCase();
+      if (seen.has(k)) return;
+      seen.add(k); out.push(v);
+    };
     if (res instanceof Ref) res = res.isCell() ? res.value() : res.toMatrix();
     if (res instanceof Matrix) { for (const v of res.data) push(v); } else if (!isErr(res)) push(res);
     return out;
