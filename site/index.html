@@ -3,91 +3,127 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ASCENT India</title>
-<meta name="description" content="WRI India ASCENT tool (Beta V25) as a web app: the full workbook with live calculations, inputs, dropdowns, navigation buttons and interactive charts.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23203864'/%3E%3Cpath d='M8 23 L16 8 L24 23' stroke='white' stroke-width='3' fill='none'/%3E%3C/svg%3E">
+<title>ASCENT</title>
+<meta name="description" content="WRI India ASCENT: GHG inventory questionnaire, results dashboards, metadata and emission factors, calculated live in the browser with the full ASCENT workbook model.">
+<link rel="icon" type="image/png" href="assets/logo-blue.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Carlito:ital,wght@0,400;0,700;1,400&family=Arimo:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Carlito:ital,wght@0,400;0,700;1,400&family=Arimo:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/app.css">
 <script src="vendor/ssf.js"></script>
 <script src="vendor/plotly.min.js" defer></script>
 </head>
 <body>
 <div id="login" class="login" style="display:none">
-  <form class="login-card" autocomplete="off">
-    <div class="login-logo">ASCENT</div>
-    <h1>WRI India · ASCENT</h1>
-    <p>Enter the password to open the tool.</p>
-    <label for="pw">Password</label>
-    <input id="pw" type="password" autocomplete="current-password" required>
-    <div class="login-error" role="alert"></div>
-    <button type="submit">Open</button>
-  </form>
-</div>
-
-<div id="loading" class="loading" style="display:none">
-  <div class="loading-card">
-    <div class="login-logo">ASCENT</div>
-    <div class="load-track"><div id="load-bar"></div></div>
-    <div id="load-text">Loading…</div>
+  <div class="login-bg"></div>
+  <div class="login-shell">
+    <img src="assets/logo-cream.png" alt="ASCENT" class="login-logo">
+    <form class="login-card" autocomplete="off">
+      <h1 class="login-title">Welcome back</h1>
+      <p class="login-sub">Enter the password to open the ASCENT tool.</p>
+      <div class="login-field">
+        <label for="pw">Password</label>
+        <input id="pw" type="password" autocomplete="current-password" placeholder="Enter the password" required>
+      </div>
+      <div class="login-error" role="alert"></div>
+      <button type="submit" class="login-submit">Sign in</button>
+    </form>
+    <p class="login-foot">ASCENT · WRI India · Advanced Scenarios and Carbon Emissions Navigation Tool</p>
   </div>
 </div>
 
-<header class="toolbar">
-  <button id="btn-home" class="tb" title="Home (ASCENT India)" aria-label="Home">&#8962;</button>
-  <button id="btn-back" class="tb" title="Back to previous sheet" aria-label="Back">&#8592;</button>
-  <span class="sep"></span>
-  <button id="btn-undo" class="tb" title="Undo (Ctrl+Z)" aria-label="Undo">&#8630;</button>
-  <button id="btn-redo" class="tb" title="Redo (Ctrl+Y)" aria-label="Redo">&#8631;</button>
-  <span class="sep"></span>
-  <select id="sheet-select" title="Go to sheet" aria-label="Go to sheet"></select>
-  <span id="sheet-title" class="sheet-title"></span>
-  <span class="grow"></span>
-  <div class="zoom" role="group" aria-label="Zoom">
-    <button id="zoom-out" class="tb" title="Zoom out" aria-label="Zoom out">&minus;</button>
-    <button id="zoom-val" class="zoom-val" title="Reset to 100%">55%</button>
-    <button id="zoom-in" class="tb" title="Zoom in" aria-label="Zoom in">+</button>
-  </div>
-  <div class="menu">
-    <button class="tb wide">View &#9662;</button>
-    <div class="menu-panel">
-      <label><input type="checkbox" id="opt-formulaBar"> Formula bar</label>
-      <label><input type="checkbox" id="opt-tabs"> Sheet tabs</label>
-      <label><input type="checkbox" id="opt-headings"> Row &amp; column headings</label>
-      <label><input type="checkbox" id="opt-gridlines"> Gridlines (this sheet)</label>
+<div id="loading" class="login loading" style="display:none">
+  <div class="login-bg"></div>
+  <div class="login-shell">
+    <img src="assets/logo-cream.png" alt="ASCENT" class="login-logo">
+    <div class="loading-card">
+      <div class="load-track"><div id="load-bar"></div></div>
+      <div id="load-text">Loading…</div>
     </div>
   </div>
-  <div class="menu">
-    <button class="tb wide">File &#9662;</button>
-    <div class="menu-panel">
-      <button id="menu-export">Export my inputs (.json)</button>
-      <button id="menu-import">Import inputs…</button>
-      <button id="menu-csv">Download this sheet (.csv)</button>
-      <button id="menu-protect">Protect / unprotect sheet…</button>
-      <hr>
-      <button id="menu-reset">Reset workbook</button>
-      <button id="menu-logout">Lock</button>
+</div>
+
+<div class="bg-grid"></div>
+<div class="bg-orb orb1"></div>
+<div class="bg-orb orb2"></div>
+
+<header class="site-header">
+  <a href="#/questionnaire" class="brand" aria-label="ASCENT home"><img src="assets/logo-blue.png" alt="ASCENT" class="brand-logo"></a>
+  <nav class="main-nav" aria-label="Pages">
+    <a href="#/questionnaire" data-page="questionnaire">Questionnaire</a>
+    <a href="#/results" data-page="results">Results</a>
+    <a href="#/metadata" data-page="metadata">Metadata</a>
+    <a href="#/factors" data-page="factors">Emission Factors</a>
+    <a href="#/workbook" data-page="workbook">Workbook</a>
+  </nav>
+  <div class="header-meta">
+    <span id="loc-pill" class="header-user-name" title="Questionnaire location"></span>
+    <div class="menu">
+      <button class="header-logout" aria-haspopup="true">Data &#9662;</button>
+      <div class="menu-panel">
+        <button id="menu-export">Export my inputs (.json)</button>
+        <button id="menu-import">Import inputs…</button>
+        <hr>
+        <button id="menu-reset" class="danger">Reset everything</button>
+      </div>
     </div>
+    <button id="menu-logout" class="header-logout">Logout</button>
   </div>
   <input type="file" id="import-file" accept=".json,application/json" hidden>
 </header>
 
-<div class="fxbar">
-  <input id="name-box" class="name-box" aria-label="Cell address" spellcheck="false">
-  <span class="fx">fx</span>
-  <input id="fx-input" class="fx-input" aria-label="Cell contents" spellcheck="false">
-</div>
+<main id="page" class="page" tabindex="-1"></main>
 
-<main id="grid" class="grid-root"></main>
+<section id="workbook" class="workbook" hidden>
+  <div class="toolbar">
+    <button id="btn-home" class="tb" title="Home (ASCENT India)" aria-label="Home">&#8962;</button>
+    <button id="btn-back" class="tb" title="Back to previous sheet" aria-label="Back">&#8592;</button>
+    <span class="sep"></span>
+    <button id="btn-undo" class="tb" title="Undo (Ctrl+Z)" aria-label="Undo">&#8630;</button>
+    <button id="btn-redo" class="tb" title="Redo (Ctrl+Y)" aria-label="Redo">&#8631;</button>
+    <span class="sep"></span>
+    <select id="sheet-select" title="Go to sheet" aria-label="Go to sheet"></select>
+    <span id="sheet-title" class="sheet-title"></span>
+    <span class="grow"></span>
+    <div class="zoom" role="group" aria-label="Zoom">
+      <button id="zoom-out" class="tb" title="Zoom out" aria-label="Zoom out">&minus;</button>
+      <button id="zoom-val" class="zoom-val" title="Reset to 100%">55%</button>
+      <button id="zoom-in" class="tb" title="Zoom in" aria-label="Zoom in">+</button>
+    </div>
+    <div class="menu">
+      <button class="tb wide">View &#9662;</button>
+      <div class="menu-panel">
+        <label><input type="checkbox" id="opt-formulaBar"> Formula bar</label>
+        <label><input type="checkbox" id="opt-tabs"> Sheet tabs</label>
+        <label><input type="checkbox" id="opt-headings"> Row &amp; column headings</label>
+        <label><input type="checkbox" id="opt-gridlines"> Gridlines (this sheet)</label>
+      </div>
+    </div>
+    <div class="menu">
+      <button class="tb wide">Sheet &#9662;</button>
+      <div class="menu-panel">
+        <button id="menu-csv">Download this sheet (.csv)</button>
+        <button id="menu-protect">Protect / unprotect sheet…</button>
+      </div>
+    </div>
+  </div>
 
-<nav id="tabs" class="tabs" aria-label="Sheets"></nav>
-<footer class="statusbar">
-  <span>Ready</span>
-  <span id="status-calc"></span>
-  <span class="grow"></span>
-  <span id="status-cell"></span>
-</footer>
+  <div class="fxbar">
+    <input id="name-box" class="name-box" aria-label="Cell address" spellcheck="false">
+    <span class="fx">fx</span>
+    <input id="fx-input" class="fx-input" aria-label="Cell contents" spellcheck="false">
+  </div>
+
+  <main id="grid" class="grid-root"></main>
+
+  <nav id="tabs" class="tabs" aria-label="Sheets"></nav>
+  <footer class="statusbar">
+    <span>Ready</span>
+    <span id="status-calc"></span>
+    <span class="grow"></span>
+    <span id="status-cell"></span>
+  </footer>
+</section>
 <div id="toast" class="toast" role="status"></div>
 <script type="module" src="js/app.js"></script>
 </body>

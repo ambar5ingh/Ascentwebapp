@@ -67,7 +67,18 @@ wb.sheets.forEach((s, i) => {
   sheets.push(out);
 });
 wb.texts = texts;
-wb.readOnlySheets = ['Metadata', 'City_master', 'ListsAndTables', 'GWP'];
+// Reference lists stay read-only. Metadata, the emission factors and GWP are editable in the
+// app, so their cells are graph inputs too.
+const READ_ONLY = ['City_master', 'ListsAndTables'];
+wb.readOnlySheets = READ_ONLY;
+// Spare blank rows at the end of the Metadata table, so data added in the app is part of
+// Metadata[...] and the questionnaire lookups pick it up.
+const META_SPARE = 2000;
+const metaTable = (wb.tables || []).find((t) => t.name === 'Metadata');
+if (metaTable && !wb.metadata) {
+  wb.metadata = { first: metaTable.ref[0] + 1, last: metaTable.ref[2], spare: META_SPARE };
+  metaTable.ref[2] += META_SPARE;
+}
 fs.writeFileSync(path.join(dst, 'workbook.json'), JSON.stringify(wb));
 
 // media
@@ -82,8 +93,11 @@ const N = eng.cells.length, T = eng.nodeCount;
 const inputs = [];
 eng.inputIdx = null;
 // collect precedent ranges again (deduplicated)
-const readOnly = new Set(['Metadata', 'City_master', 'ListsAndTables', 'GWP'].map((n) => eng.sheetIndex(n)));
+const readOnly = new Set(READ_ONLY.map((n) => eng.sheetIndex(n)));
+const metaSi = eng.sheetIndex('Metadata');
 for (const fc of eng.cells) {
+  // the per-row Sr.no codes of Metadata only read their own row's keys, which the app never edits
+  if (fc.sheet === metaSi) continue;
   const { ranges } = eng.precedents(fc);
   const seen = new Set();
   for (const [si, r1, c1, r2, c2] of ranges) {

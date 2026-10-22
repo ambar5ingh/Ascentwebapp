@@ -31,9 +31,11 @@ export class ChartView {
     this.render(true);
   }
   resize(w, h) {
-    if (Math.abs(w - this.w) < 1 && Math.abs(h - this.h) < 1 && this.zoom === this.app.zoomOf(this.si)) return;
+    // charts shown on their own (results cards) use a fixed scale instead of the sheet zoom
+    const z = this.plain ? (this.plainScale || 0.9) : this.app.zoomOf(this.si);
+    if (Math.abs(w - this.w) < 1 && Math.abs(h - this.h) < 1 && this.zoom === z) return;
     this.w = w; this.h = h;
-    this.zoom = this.app.zoomOf(this.si);
+    this.zoom = z;
     if (this.rendered) this.render(true);
   }
   refresh() { if (this.rendered) this.render(false); }
@@ -242,7 +244,8 @@ export class ChartView {
       showlegend: !!sp.legend,
       hoverlabel: { font: { family: FONT } },
     };
-    if (title) {
+    if (title && this.plain) layout.margin.t = 16;
+    else if (title) {
       const tf = sp.titleFont || {};
       layout.title = { text: esc(title), x: 0.5, xanchor: 'center', font: { family: FONT, size: pt(tf.sz || 14), color: hex(tf.color) || '#333333', weight: tf.b ? 'bold' : undefined } };
     }

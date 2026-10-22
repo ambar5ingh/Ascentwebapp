@@ -7,9 +7,15 @@ import { SheetModel, HiddenState } from './model.js';
 import { Grid } from './grid.js';
 import { Drawings } from './drawings.js';
 import { formatValue, colName, parseAddr, shiftFormula } from './format.js';
-import { runMacro, workbookOpen, questionnaireChange } from './macros.js';
+import { runMacro, workbookOpen, questionnaireChange, copyMetadata, usesSecondaryData } from './macros.js';
 import { requireLogin, logout } from './auth.js';
 import { pivotWrites } from './pivots.js';
+import { QuestionnairePage } from './pages/questionnaire.js';
+import { ResultsPage } from './pages/results.js';
+import { MetadataPage } from './pages/metadata.js';
+import { FactorsPage } from './pages/factors.js';
+
+const PAGES = { questionnaire: QuestionnairePage, results: ResultsPage, metadata: MetadataPage, factors: FactorsPage };
 
 const STORE = 'ascent-state-v1';
 const $ = (s, el = document) => el.querySelector(s);
@@ -24,6 +30,9 @@ class App {
     this.undoStack = [];
     this.redoStack = [];
     this.history = [];
+    this.pages = {};
+    this.mode = null;
+    this.originals = [];
   }
 
   // ------------------------------------------------------------------ loading
@@ -153,6 +162,16 @@ class App {
     if (!p) throw new Error('Bad address ' + a);
     return p;
   }
+  // value of a cell as saved in the workbook file (before any edit in the app)
+  originalValue(si, r, c) {
+    let map = this.originals[si];
+    if (!map) {
+      map = this.originals[si] = new Map();
+      for (const run of this.datas[si].rows) for (let i = 2; i < run.length; i++) if (run[i] !== null) map.set(KEY(run[0], run[1] + i - 2), decodeValue(run[i]));
+    }
+    const v = map.get(KEY(r, c));
+    return v === undefined ? null : v;
+  }
 
   // ------------------------------------------------------------------ UI
   async start() {
@@ -162,8 +181,57 @@ class App {
     workbookOpen(this);
     this.applyUIFlags();
     this.renderTabs();
-    this.showSheet(this.activeSi, true);
+    this.gridStale = true;
     $('#loading').remove();
+    window.addEventListener('hashchange', () => this.route());
+    await this.route();
+  }
+
+  // ------------------------------------------------------------------ pages
+  async route() {
+    let name = (location.hash.replace(/^#\/?/, '') || 'questionnaire').toLowerCase();
+    if (name !== 'workbook' && !PAGES[name]) name = 'questionnaire';
+    if (name === this.mode) return;
+    const prev = this.mode && this.pages[this.mode];
+    if (prev && prev.unmount) prev.unmount();
+    this.mode = name;
+    document.querySelectorAll('.main-nav a').forEach((a) => a.classList.toggle('active', a.dataset.page === name));
+    const page = $('#page'), wbk = $('#workbook');
+    if (name === 'workbook') {
+      page.hidden = true; page.innerHTML = '';
+      wbk.hidden = false;
+      if (this.pendingSheet !== undefined) { const si = this.pendingSheet; this.pendingSheet = undefined; if (!this.sheetVisible(si)) this.setSheetVisible(si, true); this.activateSheet(si); }
+      else this.showSheet(this.activeSi, true);
+      this.gridStale = false;
+      this.grid.scroll.focus({ preventScroll: true });
+      return;
+    }
+    wbk.hidden = true;
+    page.hidden = false;
+    page.innerHTML = '';
+    const P = this.pages[name] || (this.pages[name] = new PAGES[name](this));
+    await P.mount(page);
+    this.updateHeader();
+  }
+  pageRefreshSoon() {
+    if (this.pageTimer) return;
+    this.pageTimer = requestAnimationFrame(() => {
+      this.pageTimer = 0;
+      this.updateHeader();
+      const P = this.mode && this.pages[this.mode];
+      if (P && P.host && this.mode !== 'workbook') P.refresh();
+    });
+  }
+  // Questionnaire location, most specific first (only the levels the tier uses)
+  location() {
+    const q = this.eng.sheetIndex('Questionnaire');
+    const tier = this.eng.getValue(q, 9, 6);
+    const order = { State: [10], District: [11, 10], City: [12, 11, 10], Village: [13, 11, 10], Town: [13, 11, 10] }[tier] || [13, 12, 11, 10];
+    return { tier, parts: order.map((r) => this.eng.getValue(q, r, 6)).filter((v) => v !== null && v !== '').map(String) };
+  }
+  updateHeader() {
+    const { tier, parts } = this.location();
+    $('#loc-pill').textContent = tier ? `${tier} · ${parts.join(', ') || 'no location'}` : '';
   }
 
   bindUI() {
@@ -310,6 +378,14 @@ class App {
 
   // After macros change rows/visibility/shapes: refresh what is shown.
   refreshAfterChange(prevActive) {
+    if (this.mode !== 'workbook') {
+      // the grid is not on screen: redraw it when the workbook view is opened again
+      this.gridStale = true;
+      if (this.tabsDirty) this.renderTabs();
+      this.pageRefreshSoon();
+      this.saveSoon();
+      return;
+    }
     const si = this.activeSi;
     if (si !== prevActive || !this.grid.model || this.grid.model.si !== si) {
       if (!this.sheetVisible(si)) this.state.vis[si] = true;
@@ -446,6 +522,20 @@ class App {
     return { v: text };
   }
 
+  // Items of a data-validation list (in-cell dropdown) for a cell.
+  listValues(si, r, c) {
+    const dv = this.modelFor(si).dvAt(r, c);
+    if (!dv || dv.type !== 'list' || !dv.f1) return [];
+    const f = dv.f1;
+    if (f.startsWith('"')) return f.slice(1, -1).split(',').map((s) => s.trim()).filter((s) => s !== '');
+    let res = this.eng.evaluateRel(f, si, dv.r0, dv.c0, r, c, true);
+    const out = [];
+    const push = (v) => { if (v === null || v === undefined || v === '') return; out.push(v); };
+    if (res instanceof Ref) res = res.isCell() ? res.value() : res.toMatrix();
+    if (res instanceof Matrix) { for (const v of res.data) push(v); } else if (!isErr(res)) push(res);
+    return out;
+  }
+
   // Data validation of a value about to be entered; returns true to accept.
   async validate(si, r, c, v) {
     const m = this.modelFor(si);
@@ -475,7 +565,7 @@ class App {
       }
     };
     if (dv.type === 'list') {
-      const items = this.grid.model && this.grid.model.si === si ? this.grid.listValues(r, c) : [];
+      const items = this.listValues(si, r, c);
       const t = toText(v).toLowerCase();
       ok = items.some((it) => (typeof it === 'number' && typeof v === 'number' ? Math.abs(it - v) < 1e-9 : toText(it instanceof Rich ? it.toString() : it).toLowerCase() === t));
     } else if (dv.type === 'whole') ok = typeof v === 'number' && Number.isInteger(v) && cmp(v);
@@ -558,20 +648,36 @@ class App {
   macroWrite(list, opts = {}) { this.applyCells(list, { force: !!opts.force, undo: !opts.force }); }
 
   async afterUserChange(si, cells) {
+    const q = this.eng.sheetIndex('Questionnaire');
     // Worksheet_Change of Questionnaire fires when F9 is part of the change
-    if (si === this.eng.sheetIndex('Questionnaire') && cells.some(([r, c]) => r === 9 && c === 6)) {
+    if (si === q && cells.some(([r, c]) => r === 9 && c === 6)) {
       const prev = this.activeSi;
       this.grid.captureScroll();
       try { await questionnaireChange(this, [9, 6]); } catch (e) { console.error(e); }
       this.refreshAfterChange(prev);
     }
+    // levels below the tier are hidden in the workbook; clear them so the metadata
+    // lookups (which compare them too) find the location's data
+    if (si === q && cells.some(([r, c]) => r >= 9 && r <= 13 && c === 6)) {
+      const below = { State: [11, 12, 13], District: [12, 13], City: [13] }[this.eng.getValue(q, 9, 6)] || [];
+      const list = below.filter((r) => this.eng.getValue(q, r, 6) !== null).map((r) => [q, r, 6, null]);
+      if (list.length) this.applyCells(list, { user: true });
+    }
+    // with secondary data switched on, a new location refills the answers from Metadata
+    if (si === q && cells.some(([r, c]) => r >= 9 && r <= 13 && c === 6) && usesSecondaryData(this)) {
+      const n = copyMetadata(this);
+      this.toast(`Questionnaire filled from Metadata (${n} value${n === 1 ? '' : 's'})`);
+      if (this.mode === 'workbook') this.refreshAfterChange(this.activeSi);
+    }
   }
 
   afterRecalc() {
     this.grid.textCache.clear();
-    this.grid.invalidate();
-    this.drawings.refresh();
-    if (this.grid.model) this.onSelect(this.activeSi, ...this.grid.sel);
+    if (this.mode === 'workbook') {
+      this.grid.invalidate();
+      this.drawings.refresh();
+      if (this.grid.model) this.onSelect(this.activeSi, ...this.grid.sel);
+    } else this.pageRefreshSoon();
   }
 
   undo() { this.undoRedo(this.undoStack, this.redoStack, true); }
@@ -688,7 +794,7 @@ class App {
       const box = document.createElement('div');
       box.className = 'modal';
       box.setAttribute('role', 'dialog');
-      const h = document.createElement('h2'); h.textContent = title;
+      const h = document.createElement('h2'); h.textContent = title === 'Microsoft Excel' ? 'ASCENT' : title;
       const p = document.createElement('p'); p.textContent = msg;
       box.append(h, p);
       let input = null;
@@ -709,10 +815,10 @@ class App {
         if (e.key === 'Enter') { e.preventDefault(); row.firstChild.click(); }
       });
       (input || row.firstChild).focus();
-    }).finally(() => { if (this.grid) this.grid.scroll.focus({ preventScroll: true }); });
+    }).finally(() => { if (this.grid && this.mode === 'workbook') this.grid.scroll.focus({ preventScroll: true }); });
   }
   alert(title, msg) { return this.dialog(title, msg, [['OK', true]]); }
-  confirm(msg, title = 'Microsoft Excel') { return this.dialog(title, msg, [['Yes', true], ['No', false]]); }
+  confirm(msg, title = 'ASCENT') { return this.dialog(title, msg, [['Yes', true], ['No', false]]); }
   prompt(title, msg) { return this.dialog(title, msg, [['OK', true], ['Cancel', false]], true); }
   toast(msg) {
     const t = $('#toast');

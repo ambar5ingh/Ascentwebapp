@@ -472,34 +472,51 @@ const MACROS = {
   },
   Copy_Metadata_to_Questionnaire_v7: async (X) => {
     if (!(await X.app.confirm('Are you sure?'))) return;
-    const src = X.si('Metadata helper'), dst = X.si('Questionnaire');
     X.shape('Oval 26', 'Questionnaire').fill = WHITE; X.shape('Oval 25', 'Questionnaire').fill = BLACK;
     X.shape('Oval 26', 'Questionnaire').lineColor = BLACK;
-    const exempt = new Set();
-    const mark = (list) => {
-      for (const part of list.split(',')) {
-        const [a, b] = part.split(':');
-        const [r1, c1] = X.app.parseAddr(a), [r2, c2] = b ? X.app.parseAddr(b) : [r1, c1];
-        for (let r = r1; r <= r2; r++) for (let c = c1; c <= c2; c++) exempt.add(r * 100 + c);
-      }
-    };
-    mark('A15:A803'); mark('F21,F22,G29,H29,I29,J29,K29,K30,K31,K32,K33'); mark('H125:H130'); mark('E179,J186,G194');
-    mark('D206:K206'); mark('D223:D233,J223:J225,K223:K225,K232,K233'); mark('D249:K249'); mark('J239:J248,K239:K248');
-    mark('I331:I343,I345:I347'); mark('E548:E561'); mark('C599:C649');
-    const eng = X.app.eng;
-    const writes = [];
-    for (let r = 15; r <= 803; r++) {
-      if (eng.getValue(dst, r, 1) !== 1) continue;
-      for (let c = 2; c <= 14; c++) {
-        if (exempt.has(r * 100 + c)) continue;
-        let v = eng.getValue(src, r, c);
-        if (v === undefined) v = null;
-        writes.push([dst, r, c, v]);
-      }
-    }
-    X.app.macroWrite(writes, { force: true });
+    copyMetadata(X.app);
   },
 };
+
+// Body of Copy_Metadata_to_Questionnaire_v7: 'Metadata helper'!B:N -> Questionnaire for the
+// rows flagged 1 in column A, leaving the exempt cells alone. Returns the number of cells set.
+export function copyMetadata(app) {
+  const src = app.eng.sheetIndex('Metadata helper'), dst = app.eng.sheetIndex('Questionnaire');
+  const exempt = new Set();
+  const mark = (list) => {
+    for (const part of list.split(',')) {
+      const [a, b] = part.split(':');
+      const [r1, c1] = app.parseAddr(a), [r2, c2] = b ? app.parseAddr(b) : [r1, c1];
+      for (let r = r1; r <= r2; r++) for (let c = c1; c <= c2; c++) exempt.add(r * 100 + c);
+    }
+  };
+  mark('A15:A803'); mark('F21,F22,G29,H29,I29,J29,K29,K30,K31,K32,K33'); mark('H125:H130'); mark('E179,J186,G194');
+  mark('D206:K206'); mark('D223:D233,J223:J225,K223:K225,K232,K233'); mark('D249:K249'); mark('J239:J248,K239:K248');
+  mark('I331:I343,I345:I347'); mark('E548:E561'); mark('C599:C649');
+  const eng = app.eng;
+  const writes = [];
+  let filled = 0;
+  for (let r = 15; r <= 803; r++) {
+    if (eng.getValue(dst, r, 1) !== 1) continue;
+    for (let c = 2; c <= 14; c++) {
+      if (exempt.has(r * 100 + c)) continue;
+      let v = eng.getValue(src, r, c);
+      // VBA writing "" leaves the cell empty
+      if (v === undefined || v === '') v = null;
+      if (c === 6 && v !== null && v !== '') filled++;
+      writes.push([dst, r, c, v]);
+    }
+  }
+  app.macroWrite(writes, { force: true });
+  return filled;
+}
+
+// "Do you want to use secondary data?" is answered Yes (Oval 25 filled black)
+export function usesSecondaryData(app) {
+  const si = app.eng.sheetIndex('Questionnaire');
+  const ov = app.shapeOverride(si, 'Oval 25', false);
+  return !!ov && typeof ov.fill === 'string' && ov.fill.toUpperCase() === '000000';
+}
 
 function isZero(v) { return v === null || v === 0 || v === '' || v === false; }
 

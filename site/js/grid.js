@@ -111,6 +111,7 @@ export class Grid {
 
   captureScroll() {
     const m = this.model, v = this.view;
+    if (!this.scroll.clientWidth) return; // workbook view hidden: keep the saved position
     if (!m || !m.rowY) return;
     const st = this.scroll.scrollTop, sl = this.scroll.scrollLeft;
     v.topRow = m.rowAtY(m.frozenH + st + 0.5);
@@ -813,18 +814,7 @@ export class Grid {
     const sz = Math.max(16, Math.min(22, rc.h));
     Object.assign(this.dvButton.style, { display: 'block', left: (rc.x + rc.w + 1) + 'px', top: (rc.y + rc.h - sz) + 'px', width: sz + 'px', height: sz + 'px' });
   }
-  listValues(r, c) {
-    const m = this.model, dv = m.dvAt(r, c);
-    if (!dv || dv.type !== 'list' || !dv.f1) return [];
-    const f = dv.f1;
-    if (f.startsWith('"')) return f.slice(1, -1).split(',').map((s) => s.trim());
-    let res = this.app.eng.evaluateRel(f, m.si, dv.r0, dv.c0, r, c, true);
-    const out = [];
-    const push = (v) => { if (v === null || v === undefined || v === '' ) return; out.push(v); };
-    if (res instanceof Ref) res = res.isCell() ? res.value() : res.toMatrix();
-    if (res instanceof Matrix) { for (const v of res.data) push(v); } else if (!isErr(res)) push(res);
-    return out;
-  }
+  listValues(r, c) { return this.app.listValues(this.model.si, r, c); }
   toggleList() {
     if (this.dvList.style.display !== 'none') { this.dvList.style.display = 'none'; return; }
     const [r, c] = this.sel;
